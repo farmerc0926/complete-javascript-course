@@ -5,12 +5,17 @@
 
 const btnScrollTo = document.querySelector(".btn--scroll-to");
 const section1 = document.querySelector("#section--1");
+const nav = document.querySelector(".nav");
 const navLinks = document.querySelector(".nav__links");
 
 const modal = document.querySelector(".modal");
 const overlay = document.querySelector(".overlay");
 const btnCloseModal = document.querySelector(".btn--close-modal");
 const btnsOpenModal = document.querySelectorAll(".btn--show-modal");
+
+const tabs = document.querySelectorAll(".operations__tab");
+const tabsContainer = document.querySelector(".operations__tab-container");
+const tabsContents = document.querySelectorAll(".operations__content");
 
 const openModal = function (e) {
     // prevents page from scrolling to top on click
@@ -79,6 +84,208 @@ navLinks.addEventListener("click", function (e) {
         document
             .querySelector(e.target.getAttribute("href"))
             .scrollIntoView({ behavior: "smooth" });
+    }
+});
+
+// Tabbed Component
+tabsContainer.addEventListener("click", function (e) {
+    e.preventDefault();
+
+    // handles incase we click span number
+    const clicked = e.target.closest(".operations__tab");
+
+    if (
+        clicked.classList.contains("operations__tab") &&
+        !clicked.classList.contains("operations__tab--active")
+    ) {
+        // hide current tab
+        document
+            .querySelector(".operations__tab--active")
+            .classList.remove("operations__tab--active");
+        document
+            .querySelector(".operations__content--active")
+            .classList.remove("operations__content--active");
+
+        // show new tab
+        clicked.classList.add("operations__tab--active");
+        document
+            .querySelector(`.operations__content--${clicked.dataset.tab}`)
+            .classList.add("operations__content--active");
+    }
+});
+
+// Menu fade animation
+const handleHover = function (e) {
+    if (e.target.classList.contains("nav__link")) {
+        const link = e.target;
+        const siblings = nav.querySelectorAll(".nav__link");
+        const logo = nav.querySelector("img");
+
+        for (const el of siblings) {
+            if (el !== link) el.style.opacity = this;
+            logo.style.opacity = this;
+        }
+    }
+};
+
+// use bind to set "this" to our opacity
+// note: this seems a little strange to me and reduces readability imo
+nav.addEventListener("mouseover", handleHover.bind(0.5));
+nav.addEventListener("mouseout", handleHover.bind(1));
+
+// Sticky nav bar
+// in our html handled with "sticky" class
+// bad way
+// const initialCoords = section1.getBoundingClientRect();
+
+// window.addEventListener("scroll", function () {
+//     if (window.scrollY >= initialCoords.top) nav.classList.add("sticky");
+//     else nav.classList.remove("sticky");
+// });
+
+// Sticky nav bar with intersection observer api
+// (good way)
+
+const header = document.querySelector(".header");
+const navHeight = nav.getBoundingClientRect().height;
+
+const stickyNav = function (entires, observer) {
+    const [entry] = entires;
+    if (!entry.isIntersecting) nav.classList.add("sticky");
+    else nav.classList.remove("sticky");
+};
+
+const headerObserver = new IntersectionObserver(stickyNav, {
+    root: null,
+    threshold: 0, // when 0% of header is visible make sticky
+    rootMargin: `-${navHeight}px`, // adds/removes "extra length" to target element (the header)
+});
+headerObserver.observe(header);
+
+// Reveal Sections
+
+const allSections = document.querySelectorAll(".section");
+
+const revealSection = function (entries, observer) {
+    const [entry] = entries;
+
+    if (entry.isIntersecting) {
+        entry.target.classList.remove("section--hidden");
+
+        // can remove obverser when we are done to improve performance
+        observer.unobserve(entry.target);
+    }
+};
+
+const sectionObserver = new IntersectionObserver(revealSection, {
+    root: null,
+    threshold: 0.15,
+});
+
+for (const section of allSections) {
+    sectionObserver.observe(section);
+    section.classList.add("section--hidden");
+}
+
+// Lazy Loading Images
+const imgs = document.querySelectorAll("img[data-src]");
+
+const loadImg = function (entries, observer) {
+    const [entry] = entries;
+
+    if (entry.isIntersecting) {
+        entry.target.src = entry.target.dataset.src;
+
+        // avoids revealing image too soon
+        entry.target.addEventListener("load", function () {
+            entry.target.classList.remove("lazy-img");
+        });
+
+        observer.unobserve(entry.target);
+    }
+};
+
+const imgObserver = new IntersectionObserver(loadImg, {
+    root: null,
+    threshold: 0,
+    rootMargin: "200px", // load images a little before user sees them
+});
+
+for (const img of imgs) {
+    imgObserver.observe(img);
+}
+
+// Slider Component
+
+const slides = document.querySelectorAll(".slide");
+const slider = document.querySelector(".slider");
+
+const btnLeft = document.querySelector(".slider__btn--left");
+const btnRight = document.querySelector(".slider__btn--right");
+
+const dotContainer = document.querySelector(".dots");
+
+let curSlide = 0;
+
+const createDots = function () {
+    slides.forEach((_, i) => {
+        dotContainer.insertAdjacentHTML(
+            "beforeend",
+            `<button class="dots__dot" data-slide="${i}"></button>`
+        );
+    });
+};
+
+const goToSlide = function (s) {
+    slides.forEach(
+        (slide, i) => (slide.style.transform = `translateX(${100 * (i - s)}%)`)
+    );
+};
+
+const showActiveDot = function (s) {
+    document
+        .querySelectorAll(".dots__dot")
+        .forEach((dot) => dot.classList.remove("dots__dot--active"));
+
+    document
+        .querySelector(`.dots__dot[data-slide="${s}"]`)
+        .classList.add("dots__dot--active");
+};
+
+// set inital positions
+goToSlide(0);
+createDots();
+showActiveDot(0);
+
+// go to next slide
+const nextSlide = function () {
+    curSlide++;
+    if (curSlide >= slides.length) curSlide = 0;
+    goToSlide(curSlide);
+    showActiveDot(curSlide);
+};
+
+// go to prev slide
+const prevSlide = function () {
+    curSlide--;
+    if (curSlide < 0) curSlide = slides.length - 1;
+    goToSlide(curSlide);
+    showActiveDot(curSlide);
+};
+
+btnRight.addEventListener("click", nextSlide);
+btnLeft.addEventListener("click", prevSlide);
+
+document.addEventListener("keydown", function (e) {
+    if (e.key === "ArrowLeft") prevSlide();
+    if (e.key === "ArrowRight") nextSlide();
+});
+
+dotContainer.addEventListener("click", function (e) {
+    if (e.target.classList.contains("dots__dot")) {
+        const slideIndex = e.target.dataset.slide;
+        goToSlide(slideIndex);
+        showActiveDot(slideIndex);
     }
 });
 
@@ -227,4 +434,55 @@ nav.addEventListener(
     },
     true // listening for capture phase will be the first to act
 );
+
+
+// DOM Traversing
+const h1 = document.querySelector("h1");
+
+// going downwards: child
+console.log(h1.querySelectorAll(".highlight"));
+console.log(h1.childNodes);
+console.log(h1.children);
+h1.firstElementChild.style.color = "white";
+h1.lastElementChild.style.color = "orangered";
+
+// Going upwards: parents
+console.log(h1.parentNode);
+console.log(h1.parentElement);
+
+h1.closest(".header").style.background = "var(--gradient-secondary)";
+
+h1.closest("h1").style.background = "var(--gradient-secondary)";
+
+// Going Sideways: Siblings
+console.log(h1.previousElementSibling);
+console.log(h1.nextElementSibling);
+
+console.log(h1.previousSibling);
+console.log(h1.nextSibling);
+
+// if need all siblings (instead of prev and next)
+console.log(h1.parentElement.children);
+for (const el of [...h1.parentElement.children]) {
+    if (el !== h1) {
+        el.style.transform = "scale(0.5)";
+    }
+}
+
+// DOM LifeCycle Events
+
+// just html and js need to be loaded (not images/external resources)
+document.addEventListener("DOMContentLoaded", function (e) {
+    console.log("DOM Tree Built!", e);
+});
+
+window.addEventListener("load", function (e) {
+    console.log("Page fully loaded!", e);
+});
+
+// window.addEventListener("beforeunload", function (e) {
+//     e.preventDefault();
+//     console.log(e);
+//     e.returnValue = "";
+// });
 */
