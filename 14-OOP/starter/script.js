@@ -1,7 +1,6 @@
 "use strict";
+
 /*
-
-
 // constructor function
 const Person = function (firstName, birthYear) {
     // Instance Props
@@ -32,6 +31,18 @@ const jack = new Person("Jack", 2017);
 console.log(matilda, jack);
 
 console.log(jonas instanceof Person);
+
+// Static Methods
+
+Person.hey = function () {
+    console.log("Hey there 👋");
+    console.log(this);
+};
+
+Person.hey();
+// jonas.hey(); cant do this bc hey is not in the prototype, just in Person namespace
+
+
 
 // Prototypes
 Person.prototype.calcAge = function () {
@@ -100,7 +111,7 @@ mercedes.brake();
 mercedes.brake();
 mercedes.accelerate();
 mercedes.accelerate();
-*/
+
 
 // ES6 Classes
 // still prototypal inheritance but syntax is like classes from other languages
@@ -125,8 +136,20 @@ class PersonCl {
     }
 
     set fullName(name) {
-        if (name.includes(" ")) this.fullName = name;
+        console.log(name);
+        if (name.includes(" ")) this._fullName = name;
         else alert(`${name} is not a full name!`);
+    }
+
+    get fullName() {
+        return this._fullName;
+    }
+
+    // static method
+
+    static hey() {
+        console.log("Hey there 👋");
+        console.log(this);
     }
 }
 
@@ -140,6 +163,10 @@ jessica.greet();
 // Classes are always executed in strict mode
 
 // Setters and Getters
+
+const walter = new PersonCl("Walter White", 1965);
+
+PersonCl.hey();
 
 const account = {
     owner: "jonas",
@@ -160,3 +187,191 @@ account.latest = 50;
 
 // added getter to
 console.log(jessica.age);
+
+// Object.create
+
+// define a prototype
+const PersonProto = {
+    calcAge() {
+        console.log(2037 - this.birthYear);
+    },
+
+    init(firstName, birthYear) {
+        this.firstName = firstName;
+        this.birthYear = birthYear;
+    },
+};
+
+const steven = Object.create(PersonProto);
+steven.name = "Steven";
+steven.birthYear = 2002;
+steven.calcAge();
+
+console.log(steven.__proto__ === PersonProto);
+
+const sarah = Object.create(PersonProto);
+sarah.init("Sarah", 1979);
+sarah.calcAge();
+
+// Coding Challange #2
+
+class Car {
+    constructor(make, speed) {
+        this.make = make;
+        this.speed = speed;
+    }
+
+    accelerate() {
+        this.speed += 10;
+        console.log(this.speed);
+    }
+
+    brake() {
+        this.speed -= 5;
+        console.log(this.speed);
+    }
+
+    get speedUS() {
+        return this.speed / 1.6;
+    }
+
+    set speedUS(mph) {
+        this.speed = mph * 1.6;
+    }
+}
+
+const ford = new Car("Ford", 120);
+
+ford.accelerate();
+ford.brake();
+ford.speedUS;
+ford.speedUS = 20;
+ford.brake();
+
+// Parent and student class 3 different ways
+
+// constructor functions
+const Person = function (firstName, birthYear) {
+    this.firstName = firstName;
+    this.birthYear = birthYear;
+};
+
+Person.prototype.calcAge = function () {
+    console.log(2037 - this.birthYear);
+};
+
+const Student = function (firstName, birthYear, course) {
+    // .call allows us to define "this" keyword for Person function
+    Person.call(this, firstName, birthYear);
+    this.course = course;
+};
+
+// This is the key line for inheritance
+// Obeject.create allows us to create an object using an existing prototype
+// Student.prototype = Person.prototype DOES NOT WORK
+// doing this then creating a method on the student prototype would also create the method
+//      on the person prototype which kinda defeats the purpose of inheritance
+Student.prototype = Object.create(Person.prototype);
+
+Student.prototype.introduce = function () {
+    console.log(`My name is ${this.firstName} and I study ${this.course}.`);
+};
+
+const mike = new Student("Mike", 2020, "Computer Science");
+mike.introduce();
+mike.calcAge();
+
+// Coding Challange #3
+
+// 1
+const Car = function (make, speed) {
+    this.make = make;
+    this.speed = speed;
+};
+
+Car.prototype.accelerate = function () {
+    this.speed += 10;
+    console.log(`${this.make} acclerated to ${this.speed} km/h`);
+};
+Car.prototype.brake = function () {
+    this.speed -= 5;
+    console.log(`${this.make} decclerated to ${this.speed} km/h`);
+};
+
+const ElectricCar = function (make, speed, charge) {
+    Car.call(this, make, speed);
+    this.charge = charge;
+};
+
+ElectricCar.prototype = Object.create(Car.prototype);
+
+// 2
+ElectricCar.prototype.chargeBattery = function (chargeTo) {
+    this.charge = chargeTo;
+    console.log(`Charged to ${this.charge}`);
+};
+
+// 3
+ElectricCar.prototype.accelerate = function () {
+    this.speed += 20;
+    this.charge *= 0.99;
+    console.log(
+        `${this.make} acclerated to ${this.speed} km/h, with a charge of ${this.charge}%`
+    );
+};
+
+// 4
+const tesla = new ElectricCar("Tesla", 100, 100);
+tesla.brake();
+tesla.chargeBattery(50);
+tesla.accelerate();
+*/
+
+// Skipping to coding challange #4
+
+class CarCl {
+    constructor(make, speed) {
+        this.make = make;
+        this.speed = speed;
+    }
+
+    accelerate() {
+        this.speed += 10;
+        console.log(`${this.make} acclerated to ${this.speed} km/h`);
+        return this;
+    }
+    brake() {
+        this.speed -= 5;
+        console.log(`${this.make} decclerated to ${this.speed} km/h`);
+        return this;
+    }
+}
+
+class EvCl extends CarCl {
+    #charge;
+
+    constructor(make, speed, charge) {
+        super(make, speed);
+        this.#charge = charge;
+    }
+
+    chargeBattery(chargeTo) {
+        this.#charge = chargeTo;
+        console.log(`Charged to ${this.#charge}`);
+        return this;
+    }
+
+    accelerate() {
+        this.speed += 20;
+        this.charge *= 0.99;
+        console.log(
+            `${this.make} acclerated to ${this.speed} km/h, with a charge of ${
+                this.#charge
+            }%`
+        );
+        return this;
+    }
+}
+
+const tesla = new EvCl("Tesla", 100, 100);
+tesla.accelerate().accelerate().accelerate().chargeBattery(100);
